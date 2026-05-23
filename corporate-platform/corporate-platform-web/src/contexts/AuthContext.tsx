@@ -65,13 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   const syncProfile = useCallback(async (token: string): Promise<AuthUser | null> => {
+    if (!token) {
+      return null
+    }
+
     try {
-      const profile = await getProfileApi(token);
-      storeUser(profile);
-      setUser(profile);
-      return profile;
+      const profile = await getProfileApi(token)
+      storeUser(profile)
+      setUser(profile)
+      return profile
     } catch (error) {
-      console.error('Profile sync failed:', error);
+      console.error('Profile sync failed:', error)
       return null;
     }
   }, []);
@@ -119,6 +123,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!refreshToken) return false;
 
       const response = await refreshApi(refreshToken);
+      if (!response.accessToken || !response.refreshToken) {
+        return false;
+      }
       
       // Store new tokens (backend returns 15min access token)
       storeTokens(response.accessToken, response.refreshToken, 900);
@@ -147,49 +154,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login function
   const login = useCallback(async (credentials: LoginCredentials) => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const response = await loginApi(credentials);
-      
-      // Store tokens (access token expires in 15min = 900s)
-      storeTokens(response.accessToken, response.refreshToken, 900);
-      const profile = await syncProfile(response.accessToken);
-      if (!profile) {
-        throw new Error('Unable to load user profile after login');
+      const response = await loginApi(credentials)
+
+      if (!response.accessToken || !response.refreshToken) {
+        throw new Error('Authentication response is missing tokens')
       }
 
-      // Redirect to dashboard or previous page
-      router.push('/');
+      storeTokens(response.accessToken, response.refreshToken, 900)
+      const profile = await syncProfile(response.accessToken)
+      if (!profile) {
+        throw new Error('Unable to load user profile after login')
+      }
+
+      router.push('/')
     } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
+      console.error('Login failed:', error)
+      throw error
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [router, syncProfile]);
+  }, [router, syncProfile])
 
   // Register function
   const register = useCallback(async (credentials: RegisterCredentials) => {
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const response = await registerApi(credentials);
-      
-      // Store tokens (access token expires in 15min = 900s)
-      storeTokens(response.accessToken, response.refreshToken, 900);
-      const profile = await syncProfile(response.accessToken);
-      if (!profile) {
-        throw new Error('Unable to load user profile after registration');
+      const response = await registerApi(credentials)
+
+      if (!response.accessToken || !response.refreshToken) {
+        throw new Error('Registration response is missing tokens')
       }
 
-      // Redirect to dashboard
-      router.push('/');
+      storeTokens(response.accessToken, response.refreshToken, 900)
+      const profile = await syncProfile(response.accessToken)
+      if (!profile) {
+        throw new Error('Unable to load user profile after registration')
+      }
+
+      router.push('/')
     } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
+      console.error('Registration failed:', error)
+      throw error
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  }, [router, syncProfile]);
+  }, [router, syncProfile])
 
   // Logout function
   const logout = useCallback(async () => {

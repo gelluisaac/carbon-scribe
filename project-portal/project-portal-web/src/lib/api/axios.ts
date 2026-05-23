@@ -83,8 +83,13 @@ api.interceptors.response.use(
   async (err: AxiosError) => {
     const status = err.response?.status;
     const originalRequest = err.config as any;
+    const requestUrl = String(originalRequest?.url || '');
+    const isAuthEndpoint =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/logout') ||
+      requestUrl.includes('/auth/refresh');
     
-    if (status === 401 && onUnauthorized && originalRequest && !originalRequest._retry) {
+    if (status === 401 && onUnauthorized && originalRequest && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
       
       // If already refreshing, queue this request
