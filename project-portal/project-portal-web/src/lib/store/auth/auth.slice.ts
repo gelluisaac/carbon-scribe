@@ -30,15 +30,20 @@ const isTokenExpired = (expiresIn: number | null): boolean => {
 
 export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set, get) => {
   const clearAuthState = () => {
+    const wasHydrated = get().isHydrated;
     setAuthToken(null);
-    set(INITIAL_AUTH_STATE);
+    set({
+      ...INITIAL_AUTH_STATE,
+      // Keep hydration true after first boot so guards can redirect immediately.
+      isHydrated: wasHydrated || true,
+    });
   };
 
   // Handle 401 responses globally
   setOnUnauthorized(() => {
-    const { isAuthenticated, refreshSession } = get();
-    
-    if (isAuthenticated) {
+    const { isAuthenticated, refreshToken, refreshSession } = get();
+
+    if (isAuthenticated && refreshToken) {
       // Try to refresh before giving up
       refreshSession().catch(() => {
         clearAuthState();
@@ -149,6 +154,14 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
       } finally {
         clearAuthState();
         set((s) => ({ authLoading: { ...s.authLoading, logout: false } }));
+
+        // Use a hard redirect to avoid router/state races after auth teardown.
+        if (typeof window !== "undefined") {
+          const path = window.location.pathname;
+          if (!['/login', '/register'].includes(path)) {
+            window.location.replace('/login');
+          }
+        }
       }
     },
 
@@ -157,7 +170,7 @@ export const createAuthSlice: StateCreator<StoreState, [], [], AuthSlice> = (set
 
       if (!refreshToken) {
         if (isAuthenticated) clearAuthState();
-        return;
+        throw new Error("No refresh token available");
       }
 
       // Prevent multiple concurrent refresh attempts
