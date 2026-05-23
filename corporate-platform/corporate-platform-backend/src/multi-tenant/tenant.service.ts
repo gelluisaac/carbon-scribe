@@ -125,13 +125,17 @@ export class TenantService {
       return true;
     }
 
-    return this.publicRoutePatterns.some((pattern) => pattern.test(requestPath));
+    return this.publicRoutePatterns.some((pattern) =>
+      pattern.test(requestPath),
+    );
   }
 
   private extractPathFromRequest(request: Request): string {
     // request.path in NestJS middleware is relative to the router mount point
     // and returns '/' for all routes. Use originalUrl to get the actual full path.
-    const fullUrl = request.originalUrl || request.url || request.path || '/';
+    // Prefer request.path over request.url so test/mocked requests that override
+    // only `path` are interpreted correctly.
+    const fullUrl = request.originalUrl || request.path || request.url || '/';
     return fullUrl.split('?')[0]; // Strip query string
   }
 
@@ -140,7 +144,10 @@ export class TenantService {
     if (direct) {
       return direct;
     }
-    return this.extractTenantFromPath(request, this.extractPathFromRequest(request));
+    return this.extractTenantFromPath(
+      request,
+      this.extractPathFromRequest(request),
+    );
   }
 
   resolveTenantFromApiKey(apiKey: ApiKeyAuthContext): TenantContext {
@@ -249,7 +256,10 @@ export class TenantService {
     return subdomain || null;
   }
 
-  private extractTenantFromPath(request: Request, path?: string): string | null {
+  private extractTenantFromPath(
+    request: Request,
+    path?: string,
+  ): string | null {
     const requestPath = path || this.extractPathFromRequest(request);
     const match = requestPath.match(/\/companies\/([^/]+)/);
     if (!match || !match[1]) {

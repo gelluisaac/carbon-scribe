@@ -87,7 +87,8 @@ export class PrismaService
             // Strip internal marker set when we redirect findUnique → findFirst
             // to prevent the re-triggered extension call from double-scoping.
             if ((args as any).__tenantScopeApplied) {
-              const { __tenantScopeApplied: _, ...cleanArgs } = args as any;
+              const cleanArgs = { ...(args as any) };
+              delete cleanArgs.__tenantScopeApplied;
               return query(cleanArgs);
             }
 
