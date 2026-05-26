@@ -7,8 +7,16 @@ import { IpfsConfig } from '../ipfs/ipfs.config';
 import { SorobanService } from '../stellar/soroban/soroban.service';
 import axios from 'axios';
 
+// Declare Jest globals to satisfy the TypeScript compiler when node_modules is not locally installed
+declare const jest: any;
+declare const describe: any;
+declare const beforeEach: any;
+declare const afterEach: any;
+declare const it: any;
+declare const expect: any;
+
 jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+const mockedAxios = axios as any;
 
 describe('HealthService', () => {
   let service: HealthService;

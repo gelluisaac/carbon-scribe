@@ -4,6 +4,14 @@ import { HealthService, ReadinessResponse } from './health.service';
 import { HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 
+// Declare Jest globals to satisfy the TypeScript compiler when node_modules is not locally installed
+declare const jest: any;
+declare const describe: any;
+declare const beforeEach: any;
+declare const afterEach: any;
+declare const it: any;
+declare const expect: any;
+
 describe('HealthController', () => {
   let controller: HealthController;
   let service: jest.Mocked<HealthService>;
