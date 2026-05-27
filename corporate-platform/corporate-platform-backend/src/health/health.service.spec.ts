@@ -31,6 +31,12 @@ describe('HealthService', () => {
     getLatestLedger: jest.fn(),
   };
 
+  const mockFetchTopicMetadata = jest.fn();
+
+  const mockKafkaAdmin = {
+    fetchTopicMetadata: mockFetchTopicMetadata,
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -52,9 +58,7 @@ describe('HealthService', () => {
           provide: KafkaService,
           useValue: {
             isEnabled: jest.fn().mockReturnValue(true),
-            getAdmin: jest.fn().mockReturnValue({
-              fetchTopicMetadata: jest.fn(),
-            }),
+            getAdmin: jest.fn().mockReturnValue(mockKafkaAdmin),
           },
         },
         {
@@ -94,7 +98,7 @@ describe('HealthService', () => {
       mockRedisClient.ping.mockResolvedValue('PONG');
 
       // Mock Kafka: success
-      kafkaService.getAdmin().fetchTopicMetadata.mockResolvedValue({ topics: [] });
+      mockFetchTopicMetadata.mockResolvedValue({ topics: [] });
 
       // Mock IPFS: success
       mockedAxios.get.mockResolvedValue({ status: 200, data: {} });
@@ -115,7 +119,7 @@ describe('HealthService', () => {
     it('should return unhealthy if database check fails', async () => {
       prismaService.$queryRaw.mockRejectedValue(new Error('Connection error'));
       mockRedisClient.ping.mockResolvedValue('PONG');
-      kafkaService.getAdmin().fetchTopicMetadata.mockResolvedValue({ topics: [] });
+      mockFetchTopicMetadata.mockResolvedValue({ topics: [] });
       mockedAxios.get.mockResolvedValue({ status: 200, data: {} });
       mockRpcClient.getLatestLedger.mockResolvedValue({ sequence: 100 });
 
@@ -142,7 +146,7 @@ describe('HealthService', () => {
     it('should treat IPFS 401/403 status as healthy (reachable)', async () => {
       prismaService.$queryRaw.mockResolvedValue([1]);
       mockRedisClient.ping.mockResolvedValue('PONG');
-      kafkaService.getAdmin().fetchTopicMetadata.mockResolvedValue({ topics: [] });
+      mockFetchTopicMetadata.mockResolvedValue({ topics: [] });
       mockRpcClient.getLatestLedger.mockResolvedValue({ sequence: 100 });
 
       // Mock IPFS returning a 401 response error
