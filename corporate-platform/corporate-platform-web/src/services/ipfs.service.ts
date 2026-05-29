@@ -1,3 +1,4 @@
+import { getAccessToken } from '@/lib/auth/token-storage';
 import { ApiResponse, apiClient } from './api-client';
 import type {
   IpfsBatchUploadRequest,
@@ -28,7 +29,7 @@ class IpfsService {
 
   private getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('cs_access_token');
+    return getAccessToken();
   }
 
   async uploadDocument(
